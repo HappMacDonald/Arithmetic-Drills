@@ -1,0 +1,46 @@
+<html>
+    <head><meta charset="UTF-8"><title>~/Arithmetic Drills\Drills.elm</title></head>
+    <body>
+        <div>
+            <link rel="stylesheet" href="bulma.min.css">
+            <link rel="stylesheet" href="Drills.css">
+            <div class="container">
+                <section class="hero">
+                    <div class="hero-body">
+                        <h1 class="title">Arithmetic Drills</h1>
+                    </div>
+                </section>
+                <nav class="tabs is-centered is-large is-boxed is-fullwidth">
+                    <ul>
+                        <li class="is-active"><a href="#Plus">+ Addition</a></li>
+                        <li class=""><a href="#Minus">- Subtraction</a></li>
+                        <li class=""><a href="#Times">x Multiplication</a></li>
+                        <li class=""><a href="#DividedBy">÷ Division</a></li>
+                    </ul>
+                </nav>
+                <section class="card field is-horizontal is-group-centered statRow failure">
+                    <p class="field-label control is-size-1 has-text-right">
+                        <label class="label">2 + 2 = </label>
+                    </p>
+                    <p class="field-body no-grow control is-size-1 has-text-left">3<span class="is-size-3"> (Should have been 4)</span></p>
+                </section>
+                <section class="card field is-horizontal is-group-centered">
+                    <p class="field-label control is-size-1 has-text-right"><label class="label">2 + 2 = </label></p>
+                    <p class="field-body no-grow control is-vertical-center brief"><input id="answer" class="input is-large brief"></p>
+                </section>
+                <section class="card field is-horizontal is-group-centered success statRow">
+                    <p class="field-label control is-size-3 has-text-right">Total right so far:</p>
+                    <p class="field-body no-grow control is-size-3 has-text-left">0</p>
+                </section>
+                <section class="card field is-horizontal is-group-centered failure statRow">
+                    <p class="field-label control is-size-3 has-text-right">Total wrong so far:</p>
+                    <p class="field-body no-grow control is-size-3 has-text-left">1</p>
+                </section>
+                <section class="card field is-horizontal is-group-centered statRow failure">
+                    <p class="field-label control is-size-3 has-text-right">Percent win rate:</p>
+                    <p class="field-body no-grow control is-size-3 has-text-left">0%</p>
+                </section>
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,22 @@
+.is-vertical-center
+{   display: flex;
+    align-items: center;
+}
+.brief
+{   width: 100px;
+}
+.no-grow
+{   flex-grow: 1;
+}
+.success
+{   background-color: #4f8;
+}
+.failure
+{   background-color: #f88;
+}
+.statRow
+{   padding: 10px 0;
+}
+.fixAlign
+{   line-height: 78px;
+}
