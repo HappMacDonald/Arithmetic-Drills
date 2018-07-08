@@ -24,6 +24,7 @@ import Html.Events exposing (onInput, onBlur)
 import Html.Events.Extra exposing (onEnter)
 import Dom exposing (focus)
 import Task
+import Random
 import Navigation as Nav
 
 
@@ -209,8 +210,8 @@ assertFocus =
 init : Nav.Location -> ( Model, Cmd Msg )
 init location =
     {   lastRound =
-            --Nothing
-            Just <| Round (newProblem <| operationFromHash location.hash) "3"
+            Nothing
+            --Just <| Round (newProblem <| operationFromHash location.hash) "3"
 
     ,   thisRound =
             Round (newProblem <| operationFromHash location.hash) ""
@@ -221,7 +222,7 @@ init location =
     ,   totalWrong =
             0
 
-    } ! assertFocus ++ newOperands
+    } ! ( assertFocus ++ newOperands )
 
 
 
@@ -261,11 +262,13 @@ integerInput answer =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ( { thisRound, lastRound } as model ) =
     let
-        problem = thisRound.problem
+        problem =
+            thisRound.problem
+
     in
         case msg of
             Focus ->
-                model ! assertFocus
+                model ! ( assertFocus )
             
             FocusResult result ->
                 model ! []
@@ -293,12 +296,17 @@ update msg ( { thisRound, lastRound } as model ) =
 
                     }
 
-                } ! assertFocus ++ newOperands
+                } ! ( assertFocus ++ newOperands )
             
             Typing yourAnswer ->
                 {   model
                 |   thisRound =
-                    { thisRound | yourAnswer = yourAnswer }
+                    {   thisRound
+                    |   yourAnswer =
+                            yourAnswer
+
+                    }
+
                 } ! []
             
             Answer ->
@@ -329,16 +337,40 @@ update msg ( { thisRound, lastRound } as model ) =
                     ,   totalWrong =
                             totalWrong
 
-                    } ! assertFocus ++ newOperands
+                    } ! ( assertFocus ++ newOperands )
             
             NewOperands (lValue, rValue) ->
-                case ? of
-                    valid ->
-                        {   model
-                        |   ?
-                        }   ! assertFocus
-                    invalid ->
-                        model ! assertFocus ++ newOperands
+                let
+--                    junk =
+--                        Debug.log "NewOperands" (lValue, rValue)
+
+                    problemOld =
+                        thisRound.problem
+
+                    problemNew =
+                        case problemOld.operation of
+                            Plus ->
+                                Problem lValue Plus rValue
+
+                            Minus ->
+                                Problem ( lValue + rValue ) Minus rValue
+
+                            Times ->
+                                Problem lValue Times rValue
+
+                            DividedBy ->
+                                if rValue==0 then -- We can't divide by zero, dawg :P
+                                    Problem ( lValue * 9 ) DividedBy 9 -- So let's replace zero rolls with 9 and call it a day.
+                                else
+                                    Problem ( lValue * rValue ) DividedBy rValue
+
+                in
+                    {   model
+                    |   thisRound =
+                        {   thisRound
+                        |   problem = problemNew
+                        }
+                    }   ! ( assertFocus )
 
 
 -- SUBSCRIPTIONS
