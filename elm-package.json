@@ -5,7 +5,6 @@
     "license": "BSD3",
     "source-directories": [
         ".",
-        "..\\elm-modules",
         "../elm-modules"
     ],
     "exposed-modules": [],

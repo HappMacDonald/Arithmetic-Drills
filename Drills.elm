@@ -5,7 +5,7 @@ module Drills exposing (main)
 Todo:
 * Make stats reset on tab click
 -- Needs modal "confirm" dialog for safety
--- I'd like to use https://github.com/fbonetti/elm-dialog to handle that.
+-- I'd like to use  https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog to handle that
 
 * Potentially add a "all operations" tab
 -- Requires moving the tab state out of "thisRound.problem.operation" and into some top level model element.
@@ -71,6 +71,12 @@ type Operation
     | Times
     | DividedBy
 
+{-| Types of navigational tabs, which double as operational modes.
+This is represented as Maybe Operation at present because the options are each operation, or "none of them" to represent randomly chosen operations for each problem. :)
+-}
+type alias TabType =
+    Maybe Operation
+
 
 {-| Shortcut for elm infix integer arithmetic operators like (+) and (//).
 -}
@@ -81,7 +87,8 @@ type alias IntegerFunction =
 {-| A record of all facts related to a specific Operation
 -}
 type alias OperationNames =
-    {   operation : Operation
+    {   index : Int
+    ,   tab : TabType
     ,   string : String
     ,   hash : String
     ,   symbol : String
@@ -93,27 +100,38 @@ type alias OperationNames =
 {-| A function that expands the compressed, unique facts about an operation
 into a complete, searchable record.
 -}
-operationRecordBuilder : ( Operation, String, IntegerFunction, String ) -> OperationNames
-operationRecordBuilder ( oper, symbol, function, label ) =
-    { operation =
-        oper
+operationRecordBuilder : ( Int, TabType, String, IntegerFunction, String ) -> OperationNames
+operationRecordBuilder ( index, tab, symbol, function, label ) =
+    let
+        string = case tab of
+            Nothing ->
+                "Everything"
 
-    , string =
-        toString oper
+            Just oper ->
+                toString oper
+    in
+        {   index =
+                index
+            
+        ,   tab =
+                tab
 
-    , hash =
-        "#" ++ toString oper
+        ,   string =
+                string
 
-    , symbol =
-        symbol
+        ,   hash =
+                "#" ++ string
 
-    , function =
-        function
+        ,   symbol =
+                symbol
 
-    , label =
-        symbol ++ " " ++ label
+        ,   function =
+                function
 
-    }
+        ,   label =
+                symbol ++ " " ++ label
+
+        }
 
 
 {-| In the hypothetical case where an Operation record lookup fails,
@@ -122,7 +140,7 @@ lookup result.
 -}
 defaultOperation : OperationNames
 defaultOperation =
-    operationRecordBuilder ( Plus, "+", (+), "Addition" )
+    operationRecordBuilder ( 0, Just Plus, "+", (+), "Addition" )
 
 
 {-| The initial/default record is concattenated with all other
@@ -132,9 +150,10 @@ operationRecords : List OperationNames
 operationRecords =
     [ defaultOperation ]
         ++ List.map operationRecordBuilder
-            [ ( Minus, "-", (-), "Subtraction" )
-            , ( Times, "x", (*), "Multiplication" )
-            , ( DividedBy, "÷", (//), "Division" )
+            [   ( 1, Just Minus, "-", (-), "Subtraction" )
+            ,   ( 2, Just Times, "x", (*), "Multiplication" )
+            ,   ( 3, Just DividedBy, "÷", (//), "Division" )
+            ,   ( 4, Nothing, "😎", max, "Everything!")
             ]
 
 
@@ -152,18 +171,29 @@ operationFind keyGetter key =
 {-| Even more compressed convenience function for looking up
 operation messages from navigational hashes.
 -}
-operationFromHash : String -> Operation
-operationFromHash hashValue =
-    operationFind .hash hashValue |> .operation
+tabFromHash : String -> TabType
+tabFromHash hashValue =
+    operationFind .hash hashValue |> .tab
 
 
-{-| These values define the parts of the flashcard equation
+operationMapper : Int -> Operation
+operationMapper index =
+    operationFind .index index |> .tab |> Maybe.withDefault Plus
+
+
+{-| These values define the parts of a flashcard equation
+Lvalue and Rvalue are meant to be constrained to Int[0-9]
+Dividend is meant to be constrained to Int[1-9]
 -}
 type alias Lvalue =
     Int
 
 
 type alias Rvalue =
+    Int
+
+
+type alias Dividend =
     Int
 
 
@@ -186,6 +216,7 @@ type alias Round =
 type alias Model =
     {   lastRound: Maybe Round
     ,   thisRound: Round
+    ,   tab: TabType
     ,   totalRight: Int
     ,   totalWrong: Int
     }
@@ -195,20 +226,33 @@ type alias Model =
 -- INIT
 
 
-newOperands : List (Cmd Msg)
-newOperands =
+{-| Represents what we want NewProblem to return: a bunch of random values suitable for generating a new problem regardless of context.
+-}
+type alias DiceRoll =
+    {   rValue : Rvalue
+    ,   operation : Operation
+    ,   lValue : Lvalue
+    ,   dividend : Int
+    }
+
+
+newProblem : List (Cmd Msg)
+newProblem =
     [   Random.generate
-        NewOperands
-        (   Random.pair
+        NewProblem
+        (   Random.map4
+            DiceRoll
             ( Random.int 0 9 )
+            ( Random.map operationMapper (Random.int 0 3) )
             ( Random.int 0 9 )
+            ( Random.int 1 9 )
         )
     ]
 
 
-newProblem : Operation -> Problem
-newProblem oper =
-    Problem 2 oper 2
+defaultProblem : Problem
+defaultProblem =
+    Problem 2 Plus 2
 
 
 assertFocus : List (Cmd Msg)
@@ -220,10 +264,12 @@ init : Nav.Location -> ( Model, Cmd Msg )
 init location =
     {   lastRound =
             Nothing
-            --Just <| Round (newProblem <| operationFromHash location.hash) "3"
 
     ,   thisRound =
-            Round (newProblem <| operationFromHash location.hash) ""
+            Round defaultProblem ""
+
+    ,   tab =
+            tabFromHash location.hash
 
     ,   totalRight =
             0
@@ -231,7 +277,7 @@ init location =
     ,   totalWrong =
             0
 
-    } ! ( assertFocus ++ newOperands )
+    } ! ( assertFocus ++ newProblem )
 
 
 
@@ -242,17 +288,17 @@ type Msg
     =   Focus
     |   FocusResult (Result Dom.Error ())
     |   UrlChange Nav.Location
-    |   ChangeTab Operation
+    |   ChangeTab TabType
     |   Typing String
     |   Answer
-    |   NewOperands (Int, Int)
+    |   NewProblem DiceRoll
 
 
 problemAnswer : Problem -> Int
 problemAnswer problem =
     let
         function =
-            operationFind .operation problem.operation |> .function
+            operationFind .tab (Just problem.operation) |> .function
     in
         function problem.lValue problem.rValue
 
@@ -260,7 +306,6 @@ problemAnswer problem =
 isCorrect : Round -> Bool
 isCorrect round =
     integerInput round.yourAnswer == problemAnswer round.problem
-
 
 
 integerInput : String -> Int
@@ -281,31 +326,12 @@ update msg ( { thisRound, lastRound } as model ) =
             
             FocusResult result ->
                 model ! []
-{-
-                case result of
-                    Err (Dom.NotFound id) ->
-                        -- unable to find dom 'id'
-                    Ok () ->
-                        -- successfully focus the dom
--}
 
             UrlChange location ->
-                update ( ChangeTab <| operationFromHash location.hash ) model
+                update ( ChangeTab <| tabFromHash location.hash ) model
 
-            ChangeTab operation ->
-                {   model
-                |   thisRound =
-                    {   thisRound
-                    |   problem =
-                        {   problem
-                        |   operation =
-                                operation
-
-                        }
-
-                    }
-
-                } ! ( assertFocus ++ newOperands )
+            ChangeTab tab ->
+                { model | tab = tab} ! ( assertFocus ++ newProblem )
             
             Typing yourAnswer ->
                 {   model
@@ -338,7 +364,7 @@ update msg ( { thisRound, lastRound } as model ) =
                             Just <| Round problem thisRound.yourAnswer
 
                     ,   thisRound = 
-                            Round (newProblem problem.operation) ""
+                            Round defaultProblem ""
 
                     ,   totalRight =
                             totalRight
@@ -346,32 +372,37 @@ update msg ( { thisRound, lastRound } as model ) =
                     ,   totalWrong =
                             totalWrong
 
-                    } ! ( assertFocus ++ newOperands )
+                    } ! ( assertFocus ++ newProblem )
             
-            NewOperands (lValue, rValue) ->
+            NewProblem diceRoll ->
                 let
 --                    junk =
---                        Debug.log "NewOperands" (lValue, rValue)
+--                        Debug.log "NewProblem" (lValue, oper, rValue)
 
                     problemOld =
                         thisRound.problem
 
+                    operation =
+                        case model.tab of
+                            Just operation ->
+                                operation
+
+                            Nothing ->
+                                diceRoll.operation
+
                     problemNew =
-                        case problemOld.operation of
+                        case operation of
                             Plus ->
-                                Problem lValue Plus rValue
+                                Problem diceRoll.lValue Plus diceRoll.rValue
 
                             Minus ->
-                                Problem ( lValue + rValue ) Minus rValue
+                                Problem ( diceRoll.lValue + diceRoll.rValue ) Minus diceRoll.rValue
 
                             Times ->
-                                Problem lValue Times rValue
+                                Problem diceRoll.lValue Times diceRoll.rValue
 
                             DividedBy ->
-                                if rValue==0 then -- We can't divide by zero, dawg :P
-                                    Problem ( lValue * 9 ) DividedBy 9 -- So let's replace zero rolls with 9 and call it a day.
-                                else
-                                    Problem ( lValue * rValue ) DividedBy rValue
+                                Problem ( diceRoll.lValue * diceRoll.dividend ) DividedBy diceRoll.dividend
 
                 in
                     {   model
@@ -396,19 +427,19 @@ subscriptions model =
 
 {-| For now, just whether or not tab is active.
 -}
-tabAttr : Model -> Operation -> List (Html.Attribute Msg)
-tabAttr model thisOperation =
-    [ Attr.classList [("is-active", model.thisRound.problem.operation == thisOperation)] ]
+tabAttr : Model -> TabType -> List (Html.Attribute Msg)
+tabAttr model tab =
+    [ Attr.classList [("is-active", model.tab == tab)] ]
 
 {-| Creates HTML Anchor (hyperlink) element for the given operation,
 complete with link to correct nav hash and text label that includes
 the operation symbol and name.
 -}
-tabAnchor : Model -> Operation -> Html Msg
-tabAnchor model operation =
+tabAnchor : Model -> TabType -> Html Msg
+tabAnchor model tab =
     let
         record =
-            operationFind .operation operation
+            operationFind .tab tab
 
     in
     Html.a
@@ -429,7 +460,8 @@ displayProblem round =
     [   Html.text <| toString round.problem.lValue
     ,   whitespace
     ,   round.problem.operation
-        |>  operationFind .operation
+        |>  Just
+        |>  operationFind .tab
         |>  .symbol
         |>  Html.text
     ,   whitespace
@@ -544,10 +576,11 @@ view model =
                 ]
             ,   Html.nav [ Attr.class "tabs is-centered is-large is-boxed is-fullwidth" ]
                 [   ul []
-                    [   li (tabAttr model Plus) [ tabAnchor model Plus ]
-                    ,   li (tabAttr model Minus) [ tabAnchor model Minus ]
-                    ,   li (tabAttr model Times) [ tabAnchor model Times ]
-                    ,   li (tabAttr model DividedBy) [ tabAnchor model DividedBy ]
+                    [   li (tabAttr model <| Just Plus) [ tabAnchor model <| Just Plus ]
+                    ,   li (tabAttr model <| Just Minus) [ tabAnchor model <| Just Minus ]
+                    ,   li (tabAttr model <| Just Times) [ tabAnchor model <| Just Times ]
+                    ,   li (tabAttr model <| Just DividedBy) [ tabAnchor model <| Just DividedBy ]
+                    ,   li (tabAttr model Nothing) [ tabAnchor model Nothing ]
                     ]
                 ]
             ]
