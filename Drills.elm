@@ -3,7 +3,11 @@ module Drills exposing (main)
 {-| Web app that acts as arithmetic flashcards.
 
 Todo:
-* AFAICT We're all done! :D
+* Change answer to a number input; this will improve experience on mobile 100%
+
+* Firefox seems to have a bug that fails to pop the dialog, according to Michael?
+
+* Michael's bug testing also clarified that canceling debug leaves you at the "new" url, so refreshing takes you to new URL instead of keeping you at present one.
 -}
 
 import FindRecord
