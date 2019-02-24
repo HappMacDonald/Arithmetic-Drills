@@ -3,7 +3,11 @@ module Drills exposing (main)
 {-| Web app that acts as arithmetic flashcards.
 
 Todo:
-* AFAICT We're all done! :D
+* Change answer to a number input; this will improve experience on mobile 100%
+
+* Firefox seems to have a bug that fails to pop the dialog, according to Michael?
+
+* Michael's bug testing also clarified that canceling debug leaves you at the "new" url, so refreshing takes you to new URL instead of keeping you at present one.
 -}
 
 import FindRecord
@@ -176,8 +180,7 @@ operationMapper index =
 
 
 {-| These values define the parts of a flashcard equation
-Lvalue and Rvalue are meant to be constrained to Int[0-9]
-Dividend is meant to be constrained to Int[1-9]
+Lvalue, Dividend, and Rvalue are meant to be constrained to Int[-9 - 9]
 -}
 type alias Lvalue =
     Int
@@ -237,10 +240,10 @@ newProblem =
         NewProblem
         (   Random.map4
             DiceRoll
-            ( Random.int 0 9 )
+            ( Random.int -9 9 )
             ( Random.map operationMapper (Random.int 0 3) )
-            ( Random.int 0 9 )
-            ( Random.int 1 9 )
+            ( Random.int -9 9 )
+            ( Random.int -8 9 )
         )
     ]
 
@@ -310,7 +313,7 @@ isCorrect round =
 
 integerInput : String -> Int
 integerInput answer =
-    answer |> String.trim |> String.toInt |> Result.withDefault -1 
+    answer |> String.trim |> String.toInt |> Result.withDefault -999
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -371,7 +374,7 @@ update msg ( { thisRound, lastRound } as model ) =
                 } ! []
             
             Answer ->
-                if integerInput thisRound.yourAnswer >= 0 then
+                if integerInput thisRound.yourAnswer >= -99 then
                     let
                         totalRight =
                             if isCorrect thisRound then
@@ -403,11 +406,18 @@ update msg ( { thisRound, lastRound } as model ) =
                 else
                     model ! ( assertFocus )
             
-            NewProblem diceRoll ->
+            NewProblem diceRollUncooked ->
                 let
 --                    junk =
 --                        Debug.log "NewProblem" (lValue, oper, rValue)
 
+                    diceRoll =
+                        {   diceRollUncooked
+                        |   dividend =
+                                if diceRollUncooked.dividend < 1
+                                then diceRollUncooked.dividend - 1
+                                else diceRollUncooked.dividend
+                        }
                     problemOld =
                         thisRound.problem
 

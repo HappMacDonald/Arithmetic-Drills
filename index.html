@@ -10003,7 +10003,7 @@ var _user$project$Drills$subscriptions = function (model) {
 var _user$project$Drills$integerInput = function (answer) {
 	return A2(
 		_elm_lang$core$Result$withDefault,
-		-1,
+		-999,
 		_elm_lang$core$String$toInt(
 			_elm_lang$core$String$trim(answer)));
 };
@@ -10337,13 +10337,13 @@ var _user$project$Drills$newProblem = {
 		A5(
 			_elm_lang$core$Random$map4,
 			_user$project$Drills$DiceRoll,
-			A2(_elm_lang$core$Random$int, 0, 9),
+			A2(_elm_lang$core$Random$int, -9, 9),
 			A2(
 				_elm_lang$core$Random$map,
 				_user$project$Drills$operationMapper,
 				A2(_elm_lang$core$Random$int, 0, 3)),
-			A2(_elm_lang$core$Random$int, 0, 9),
-			A2(_elm_lang$core$Random$int, 1, 9))),
+			A2(_elm_lang$core$Random$int, -9, 9),
+			A2(_elm_lang$core$Random$int, -8, 9))),
 	_1: {ctor: '[]'}
 };
 var _user$project$Drills$Answer = {ctor: 'Answer'};
@@ -10448,7 +10448,7 @@ var _user$project$Drills$update = F2(
 				case 'Answer':
 					if (_elm_lang$core$Native_Utils.cmp(
 						_user$project$Drills$integerInput(_p15.yourAnswer),
-						0) > -1) {
+						-99) > -1) {
 						var totalWrong = (!_user$project$Drills$isCorrect(_p15)) ? (_p14.totalWrong + 1) : _p14.totalWrong;
 						var totalRight = _user$project$Drills$isCorrect(_p15) ? (_p14.totalRight + 1) : _p14.totalRight;
 						return A2(
@@ -10468,28 +10468,33 @@ var _user$project$Drills$update = F2(
 					}
 				default:
 					var _p13 = _p9._0;
+					var problemOld = _p15.problem;
+					var diceRoll = _elm_lang$core$Native_Utils.update(
+						_p13,
+						{
+							dividend: (_elm_lang$core$Native_Utils.cmp(_p13.dividend, 1) < 0) ? (_p13.dividend - 1) : _p13.dividend
+						});
 					var operation = function () {
 						var _p11 = _p14.tab;
 						if (_p11.ctor === 'Just') {
 							return _p11._0;
 						} else {
-							return _p13.operation;
+							return diceRoll.operation;
 						}
 					}();
 					var problemNew = function () {
 						var _p12 = operation;
 						switch (_p12.ctor) {
 							case 'Plus':
-								return A3(_user$project$Drills$Problem, _p13.lValue, _user$project$Drills$Plus, _p13.rValue);
+								return A3(_user$project$Drills$Problem, diceRoll.lValue, _user$project$Drills$Plus, diceRoll.rValue);
 							case 'Minus':
-								return A3(_user$project$Drills$Problem, _p13.lValue + _p13.rValue, _user$project$Drills$Minus, _p13.rValue);
+								return A3(_user$project$Drills$Problem, diceRoll.lValue + diceRoll.rValue, _user$project$Drills$Minus, diceRoll.rValue);
 							case 'Times':
-								return A3(_user$project$Drills$Problem, _p13.lValue, _user$project$Drills$Times, _p13.rValue);
+								return A3(_user$project$Drills$Problem, diceRoll.lValue, _user$project$Drills$Times, diceRoll.rValue);
 							default:
-								return A3(_user$project$Drills$Problem, _p13.lValue * _p13.dividend, _user$project$Drills$DividedBy, _p13.dividend);
+								return A3(_user$project$Drills$Problem, diceRoll.lValue * diceRoll.dividend, _user$project$Drills$DividedBy, diceRoll.dividend);
 						}
 					}();
-					var problemOld = _p15.problem;
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
