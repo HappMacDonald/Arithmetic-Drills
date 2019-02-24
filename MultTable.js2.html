@@ -1,0 +1,44 @@
+<style>
+* { padding: 0; margin: 0; font-family: courier; font-size: 24pt; }
+td, th { width: 2em; }
+.input {width: 2em; text-align: center; background-color: #faa;}
+.input[type=number]::-webkit-inner-spin-button,
+.input[type=number]::-webkit-outer-spin-button {
+-webkit-appearance: none;
+margin: 0;
+}
+#multTable
+{   position: absolute;
+    top:0;
+    bottom: 0;
+    left: 33%;
+
+    margin: auto;
+}
+</style>
+<table cellspacing='0' border="1" id='multTable'>
+<script>
+
+function check(input, answer)
+{   input.style.backgroundColor = (input.value == answer)?'#afa':'#faa';
+}
+
+for(i=1; i<10; i++)
+{   document.write("<tr>")
+    for(j=1; j<10; j++)
+    {   if(i==1 || j==1)
+        {   document.write(`<th>${i*j}</th>`)
+        }
+        else
+        {   document.write(`
+                <td>
+                    <input type='number' id='${i}x${j}' onInput='check(this, ${i*j})' min='0' max='99' class='input'>
+                </td>
+            `);
+        }
+    }
+    document.write("</tr>")
+}
+
+</script>
+</table>

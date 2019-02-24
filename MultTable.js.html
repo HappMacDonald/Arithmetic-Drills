@@ -1,0 +1,27 @@
+<table cellspacing='0' border="1">
+<script>
+
+for(i=1; i<10; i++)
+{
+    document.write("<tr>")
+    for(j=1; j<10; j++)
+    {
+        if(i==1 || j==1)
+        {
+            document.write(`<th>${i*j}</th>`)
+        }
+        else
+        {
+            document.write(`
+                <td>
+                    <input type='number' id='${i*j}' onInput='check(this)' min='0' max='99' size='2'>
+                </td>
+            `)
+
+        }
+    }
+    document.write("</tr>")
+}
+
+</script>
+</table>
